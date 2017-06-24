@@ -10,7 +10,9 @@ class Node:
         return self.name == other
     def __ne__(self, other):
         return self.name != other
-
+    def to_string(self):
+        return self.name
+    
 class Edge:
     def __init__(self, node1, node2):
         self.node1 = node1
@@ -20,7 +22,16 @@ class Edge:
     def __ne__(self, other):
         return not (((self.node1 == other.node1) and (self.node2 == other.node2)) or ((self.node1 == other.node2) and (self.node2 == other.node1)))
     def is_include(self, node):
-        return (node1 == node) or (node2 == ndoe)
+        return (self.node1 == node) or (self.node2 == node)
+    def to_string(self):
+        return self.node1.to_string() + ":" + self.node2.to_string()
+    def get_pair(self, node):
+        if self.node1 == node:
+            return self.node2
+        elif self.node2 == node:
+            return self.node1
+        else:
+            return None
 
 class Graph:
     def __init__(self):
@@ -36,9 +47,18 @@ class Graph:
         res = []
         for e in self.edge_list:
             if e.is_include(node):
-                res.append(res)
+                res.append(e.get_pair(node))
         return res
-    
+    def to_string(self):
+        res = ""
+        res += "Node:\n"
+        for n in self.node_list:
+            res += n.to_string() + "\n"
+        res += "Edge:\n"
+        for e in self.edge_list:
+            res += e.to_string() + "\n"
+        return res
+            
 def make_graph(file_name):
     graph = Graph()
     with open(file_name, "r") as f:
@@ -67,6 +87,7 @@ def search_path(graph, start, end, step):
     while not node_queue.empty():
         info = node_queue.get()
         current_node = info[0]
+        #print "search " + current_node.to_string()
         current_path = list(info[1])
         current_depth = info[2]
         current_path.append(current_node)
@@ -78,13 +99,41 @@ def search_path(graph, start, end, step):
         if current_depth == step:
             continue
         #expand children nodes
-        for child in current_node:
+        for child in graph.get_connect(current_node):
             if child in checked:
                 continue
             #not checked
-            checked.append(child)
+            if child != end:
+                checked.append(child)
             node_queue.put((child, current_path, current_depth + 1))
-            
+    return res
+
+def path_to_string(path):
+    #path: list of node
+    s = ""
+    for (i, node) in enumerate(path):
+        if (i == len(path) - 1):
+            s += node.to_string()
+        else:
+            s += node.to_string() + "->"
+    return s
+
+def main(string_file_name):
+    graph = make_graph(string_file_name)
+    #for debug
+    #print graph.to_string()
+    target_list  = [(x, y) for x in protein_list for y in protein_list if x != y]
+    for target in target_list:
+        print "-----Search: " + target[0] + "->" + target[1] + "-----"
+        res = search_path(graph, Node(target[0]), Node(target[1]), 9)
+        for path in res:
+            print path_to_string(path)
+    return 0
+
+if __name__ == "__main__":
+    argv = sys.argv
+    if len(argv) != 2:
+        print "invalid argment"
+        sys.exit()
+    main(argv[1])
                 
-        
-    
