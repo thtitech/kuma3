@@ -12,6 +12,8 @@ class Node:
         return self.name != other
     def to_string(self):
         return self.name
+    def __hash__(self):
+        return self.name.__hash__()
     
 class Edge:
     def __init__(self, node1, node2):
@@ -118,22 +120,64 @@ def path_to_string(path):
             s += node.to_string() + "->"
     return s
 
-def main(string_file_name):
+def get_structure_info(file_name):
+    res = {}
+    with open(file_name, "r") as f:
+        for line in f:
+            array = line.strip().split(",")
+            if array[2] == "[]":
+                res[array[0]] = False
+            else:
+                res[array[0]] = True
+    #treat kuma3
+    res["Q09666"] = True
+    res["P61978"] = True
+    res["P30101"] = True
+    res["P43243"] = True
+    return res
+
+def main(string_file_name, structure_file_name):
+    res = []
+    #search path
+    paths = []
     graph = make_graph(string_file_name)
     #for debug
     #print graph.to_string()
     target_list  = [(x, y) for x in protein_list for y in protein_list if x != y]
     for target in target_list:
-        print "-----Search: " + target[0] + "->" + target[1] + "-----"
-        res = search_path(graph, Node(target[0]), Node(target[1]), 9)
+        #print "-----Search: " + target[0] + "->" + target[1] + "-----"
+        res = search_path(graph, Node(target[0]), Node(target[1]), 5)
         for path in res:
-            print path_to_string(path)
+            paths.append(path)
+            #print path_to_string(path)
+    #filter structure
+    structure_info = get_structure_info(structure_file_name)
+    res = filter(lambda path: reduce(lambda x, y: x and y, map(lambda x: structure_info[x], path)), paths)
+    #print res
+    for p in res:
+        print path_to_string(p)
+    return 0
+
+def main2(string_file_name):
+    graph = make_graph(string_file_name)
+    target_list  = [(x, y) for x in protein_list for y in protein_list if x != y]
+    node_set = set()
+    for target in target_list:
+        res = search_path(graph, Node(target[0]), Node(target[1]), 5)
+        for path in res:
+            for n in path:
+                node_set.add(n)
+    l = [n.name for n in node_set]
+    l.sort()
+    for name in l:
+        print name
     return 0
 
 if __name__ == "__main__":
     argv = sys.argv
-    if len(argv) != 2:
+    if len(argv) != 3:
         print "invalid argment"
         sys.exit()
-    main(argv[1])
+    main(argv[1], argv[2])
                 
+    
